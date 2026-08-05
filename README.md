@@ -25,28 +25,33 @@ vaultId: <vault UUID or name>
 Connect cannot be granted access to the built-in Private, Personal, Employee, or
 default Shared vaults — items must live in a custom vault.
 
-> **Pass `connectToken` as a reference, never as a literal.** `swamp vault
-> create --config` persists the config verbatim into `vaults/<uuid>.yaml`, and
-> `.meta({ sensitive: true })` governs **logging**, not what is written to disk.
-> A token supplied literally therefore lands in a plaintext file in your repo —
-> and, if that repo is public, one `git add -A` from being published.
+> **The `connectToken` is stored on disk in plaintext, and there is no way
+> around it.** `swamp vault create --config` persists the config verbatim into
+> `vaults/<uuid>.yaml`, and `.meta({ sensitive: true })` governs **logging**, not
+> what is written to disk.
+>
+> A swamp expression does **not** help here: vault configuration is not
+> expression-evaluated, because the vault subsystem is what *resolves*
+> expressions in the first place. Writing `${{ env.OP_CONNECT_TOKEN }}` into the
+> config stores that string literally and Connect then rejects it with a 401.
+> Use shell substitution so the real value is written:
 >
 > ```bash
-> # Wrong — writes a live JWT into vaults/<uuid>.yaml
-> swamp vault create @sntxrr/1password-connect prod \
->   --config '{"connectHost":"https://connect.example.com","connectToken":"eyJhbGciOi...","vaultId":"homelab"}'
->
-> # Right — the file stores the reference; the value resolves at run time
 > export OP_CONNECT_TOKEN="$(op read 'op://Private/<item-uuid>/token.jwt')"
-> swamp vault create @sntxrr/1password-connect prod \
->   --config '{"connectHost":"https://connect.example.com","connectToken":"${{ env.OP_CONNECT_TOKEN }}","vaultId":"homelab"}'
+> swamp vault create @sntxrr/1password-connect prod --config "$(python3 -c '
+> import json, os
+> print(json.dumps({
+>     "connectHost": "https://connect.example.com",
+>     "connectToken": os.environ["OP_CONNECT_TOKEN"],
+>     "vaultId": "homelab",
+> }))')"
 > ```
 >
-> This bites specifically because the token *is* the vault: it is the one
-> credential that cannot be wired with `${{ vault.get(...) }}`, so there is no
-> vault indirection to hide behind. Check what actually landed with
-> `grep connectToken vaults/**/*.yaml`, and consider adding `vaults/` to
-> `.gitignore` outright.
+> **So treat `vaults/` as secret material.** Add it to `.gitignore` — especially
+> in a public repository, where it is otherwise one `git add -A` from publishing
+> a live credential. This token *is* the vault: it is the one credential that
+> cannot be wired through `${{ vault.get(...) }}`, so there is no indirection to
+> hide behind. Verify what landed with `grep connectToken vaults/**/*.yaml`.
 
 ## Development
 
