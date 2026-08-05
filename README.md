@@ -25,6 +25,29 @@ vaultId: <vault UUID or name>
 Connect cannot be granted access to the built-in Private, Personal, Employee, or
 default Shared vaults — items must live in a custom vault.
 
+> **Pass `connectToken` as a reference, never as a literal.** `swamp vault
+> create --config` persists the config verbatim into `vaults/<uuid>.yaml`, and
+> `.meta({ sensitive: true })` governs **logging**, not what is written to disk.
+> A token supplied literally therefore lands in a plaintext file in your repo —
+> and, if that repo is public, one `git add -A` from being published.
+>
+> ```bash
+> # Wrong — writes a live JWT into vaults/<uuid>.yaml
+> swamp vault create @sntxrr/1password-connect prod \
+>   --config '{"connectHost":"https://connect.example.com","connectToken":"eyJhbGciOi...","vaultId":"homelab"}'
+>
+> # Right — the file stores the reference; the value resolves at run time
+> export OP_CONNECT_TOKEN="$(op read 'op://Private/<item-uuid>/token.jwt')"
+> swamp vault create @sntxrr/1password-connect prod \
+>   --config '{"connectHost":"https://connect.example.com","connectToken":"${{ env.OP_CONNECT_TOKEN }}","vaultId":"homelab"}'
+> ```
+>
+> This bites specifically because the token *is* the vault: it is the one
+> credential that cannot be wired with `${{ vault.get(...) }}`, so there is no
+> vault indirection to hide behind. Check what actually landed with
+> `grep connectToken vaults/**/*.yaml`, and consider adding `vaults/` to
+> `.gitignore` outright.
+
 ## Development
 
 ```bash
