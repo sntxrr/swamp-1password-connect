@@ -1,0 +1,22 @@
+manifestVersion: 1
+
+name: "@sntxrr/1password-connect"
+version: "2026.08.05.1"
+description: "A swamp vault backend for 1Password Connect — read and write secrets over Connect's HTTP API with a bearer token, so vault.get() works headless in cron, containers, and swamp serve without the op CLI."
+repository: "https://github.com/sntxrr/swamp-1password-connect"
+
+paths:
+  base: manifest
+
+vaults:
+  - mod.ts
+
+additionalFiles:
+  - README.md
+  - LICENSE.md
+
+labels:
+  - 1password
+  - connect
+  - vault
+  - secrets
