@@ -11,7 +11,7 @@
  * @module
  */
 import { assert, assertEquals, assertStringIncludes } from "jsr:@std/assert@1";
-import { assertVaultExportConformance } from "jsr:@swamp-club/swamp-testing";
+import { assertVaultExportConformance } from "jsr:@swamp-club/swamp-testing@0.20260928.39";
 import { parseSecretKey, pickDefaultField, vault } from "./mod.ts";
 
 const VAULT_ID = "vault1234567890abcdefghijk";
